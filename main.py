@@ -162,14 +162,30 @@ class FitBuddyApp:
         text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
+
         text_widget = tk.Text(text_frame, wrap=tk.WORD, state=tk.NORMAL, bg=self.entry_bg_color,
                               fg=self.entry_fg_color, insertbackground=self.entry_fg_color,
                               font=("Arial", 12), bd=0, relief=tk.FLAT)
         text_widget.grid(row=0, column=0, sticky="nsew")
+
         scrollbar = customtkinter.CTkScrollbar(text_frame, orientation="vertical", command=text_widget.yview, width=12)
         scrollbar.grid(row=0, column=1, sticky="ns")
+        scrollbar.grid_remove()
+
         text_widget.configure(yscrollcommand=scrollbar.set)
-        return text_widget
+
+        def update_scrollbar(event=None):
+            first, last = text_widget.yview()
+            if last - first >= 1.0:
+                scrollbar.grid_remove()
+            else:
+                scrollbar.grid()
+
+        text_widget.bind('<Configure>', update_scrollbar)
+        text_widget.bind('<<Modified>>', update_scrollbar)
+        text_widget.edit_modified(False)
+
+        return text_widget, update_scrollbar
 
     def show_nutrition_tracker(self):
         self.show_frame(self.nutrition_tracker_frame)
@@ -218,7 +234,7 @@ class FitBuddyApp:
         def setup_nutrition_log(log_window):
             log_window.grid_rowconfigure(0, weight=1)
             log_window.grid_columnconfigure(0, weight=1)
-            log_text = self.create_text_with_scrollbar(log_window)
+            log_text, update_scrollbar = self.create_text_with_scrollbar(log_window)
             has_entries = bool(self.nutrition_log and any(self.nutrition_log.values()))
             if has_entries:
                 for date, entries in self.nutrition_log.items():
@@ -228,6 +244,8 @@ class FitBuddyApp:
                                         f"  Calories: {entry['Calories']} | Fat: {entry['Fat']} | Protein: {entry['Protein']} | Carbs: {entry['Carbohydrates']} | Fiber: {entry['Fiber']}\n")
                     log_text.insert(tk.END, "\n")
                 log_text.config(state=tk.DISABLED)
+                log_text.edit_modified(True)
+                update_scrollbar()
                 buttons_frame = customtkinter.CTkFrame(log_window, fg_color=self.bg_color)
                 buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
                 buttons_frame.grid_columnconfigure(0, weight=1)
@@ -238,6 +256,10 @@ class FitBuddyApp:
                 exit_button = self.create_button(buttons_frame, "Exit", log_window.destroy)
                 exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
             else:
+                log_text.insert(tk.END, "No entries to display.")
+                log_text.config(state=tk.DISABLED)
+                log_text.edit_modified(True)
+                update_scrollbar()
                 buttons_frame = customtkinter.CTkFrame(log_window, fg_color=self.bg_color)
                 buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
                 buttons_frame.grid_columnconfigure(0, weight=1)
@@ -423,7 +445,7 @@ class FitBuddyApp:
         def setup_workout_log(log_window):
             log_window.grid_rowconfigure(0, weight=1)
             log_window.grid_columnconfigure(0, weight=1)
-            log_text = self.create_text_with_scrollbar(log_window)
+            log_text, update_scrollbar = self.create_text_with_scrollbar(log_window)
             has_entries = bool(self.workout_log and any(self.workout_log.values()))
             if has_entries:
                 for date, entries in self.workout_log.items():
@@ -433,6 +455,8 @@ class FitBuddyApp:
                                         f"  Workout: {entry['workout_type']} | Exercises: {entry['exercises']} | Sets: {entry['sets']} | Reps: {entry['reps']}\n")
                     log_text.insert(tk.END, "\n")
                 log_text.config(state=tk.DISABLED)
+                log_text.edit_modified(True)
+                update_scrollbar()
                 buttons_frame = customtkinter.CTkFrame(log_window, fg_color=self.bg_color)
                 buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
                 buttons_frame.grid_columnconfigure(0, weight=1)
@@ -443,6 +467,10 @@ class FitBuddyApp:
                 exit_button = self.create_button(buttons_frame, "Exit", log_window.destroy)
                 exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
             else:
+                log_text.insert(tk.END, "No entries to display.")
+                log_text.config(state=tk.DISABLED)
+                log_text.edit_modified(True)
+                update_scrollbar()
                 buttons_frame = customtkinter.CTkFrame(log_window, fg_color=self.bg_color)
                 buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
                 buttons_frame.grid_columnconfigure(0, weight=1)
@@ -586,9 +614,11 @@ class FitBuddyApp:
         workout_plan_window.configure(fg_color=self.bg_color)
         workout_plan_window.grid_rowconfigure(0, weight=1)
         workout_plan_window.grid_columnconfigure(0, weight=1)
-        plan_text = self.create_text_with_scrollbar(workout_plan_window)
+        plan_text, update_scrollbar = self.create_text_with_scrollbar(workout_plan_window)
         plan_text.insert(tk.END, workout_plan)
         plan_text.config(state=tk.DISABLED)
+        plan_text.edit_modified(True)
+        update_scrollbar()
         buttons_frame = customtkinter.CTkFrame(workout_plan_window, fg_color=self.bg_color)
         buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
         buttons_frame.grid_columnconfigure(0, weight=1)
@@ -694,9 +724,11 @@ class FitBuddyApp:
         diet_plan_window.configure(fg_color=self.bg_color)
         diet_plan_window.grid_rowconfigure(0, weight=1)
         diet_plan_window.grid_columnconfigure(0, weight=1)
-        plan_text = self.create_text_with_scrollbar(diet_plan_window)
+        plan_text, update_scrollbar = self.create_text_with_scrollbar(diet_plan_window)
         plan_text.insert(tk.END, diet_plan)
         plan_text.config(state=tk.DISABLED)
+        plan_text.edit_modified(True)
+        update_scrollbar()
         buttons_frame = customtkinter.CTkFrame(diet_plan_window, fg_color=self.bg_color)
         buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
         buttons_frame.grid_columnconfigure(0, weight=1)
@@ -729,9 +761,11 @@ class FitBuddyApp:
         canvas = FigureCanvasTkAgg(fig, master=plot_window)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
         def on_close():
             plt.close(fig)
             plot_window.destroy()
+
         plot_window.protocol("WM_DELETE_WINDOW", on_close)
         close_button = self.create_button(plot_window, "Close", on_close)
         close_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
@@ -742,6 +776,7 @@ class FitBuddyApp:
             messagebox.showinfo("No Data", "No data available to select.")
             return None
         self.selected_date = None
+
         def setup_date_select_window(date_select_window):
             date_select_window.grid_rowconfigure(0, weight=1)
             date_select_window.grid_columnconfigure(0, weight=1)
@@ -753,11 +788,14 @@ class FitBuddyApp:
                                                    fg_color=self.entry_bg_color, text_color=self.text_color,
                                                    button_color=self.btn_color, button_hover_color=self.btn_hover_color)
             dropdown.pack(pady=10)
+
             def confirm_selection():
                 self.selected_date = selected_date.get()
                 date_select_window.destroy()
+
             confirm_button = self.create_button(date_select_window, "Confirm", confirm_selection)
             confirm_button.pack(pady=10)
+
         self.create_modal_window("Select Date", 300, 150, setup_date_select_window)
         return self.selected_date
 
@@ -771,14 +809,17 @@ class FitBuddyApp:
         plan_window.configure(fg_color=self.bg_color)
         plan_window.grid_rowconfigure(0, weight=1)
         plan_window.grid_columnconfigure(0, weight=1)
-        plan_text = self.create_text_with_scrollbar(plan_window)
+        plan_text, update_scrollbar = self.create_text_with_scrollbar(plan_window)
         for i, plan in enumerate(plans, start=1):
             plan_text.insert(tk.END, f"{plan_type} {i}:\n{plan}\n\n")
         plan_text.config(state=tk.DISABLED)
+        plan_text.edit_modified(True)
+        update_scrollbar()
         buttons_frame = customtkinter.CTkFrame(plan_window, fg_color=self.bg_color)
         buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
+
         def clear_saved_plan():
             if len(plans) > 1:
                 selected_plan_index = simpledialog.askinteger(
@@ -798,7 +839,8 @@ class FitBuddyApp:
                     plan_window.destroy()
                     messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
             else:
-                confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the only {plan_type.lower()}?")
+                confirm = messagebox.askyesno("Confirm Deletion",
+                                              f"Are you sure you want to delete the only {plan_type.lower()}?")
                 if confirm:
                     del plans[0]
                     if not plans:
@@ -809,6 +851,7 @@ class FitBuddyApp:
                     self.save_log(log, filename)
                     plan_window.destroy()
                     messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
+
         clear_button = self.create_button(buttons_frame, "Clear", clear_saved_plan)
         clear_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         close_button = self.create_button(buttons_frame, "Close", plan_window.destroy)

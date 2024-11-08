@@ -68,7 +68,7 @@ pip install -r requirements.txt
 ```
 - **Run the Application**
 ```
-python main.py
+python3 main.py
 ```
 
 ## Development Status

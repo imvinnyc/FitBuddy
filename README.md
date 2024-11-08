@@ -58,7 +58,7 @@ cd FitBuddy
 ```
 - **Create a Virtual Environment (Optional) (Recommended)**
 ```
-python -m venv venv # To create the virtual environment
+python3 -m venv venv # To create the virtual environment
 venv\Scripts\activate # To activate the virtual environment on Windows
 source venv/bin/activate # To activate the virtual environment on Mac/Linux
 ```

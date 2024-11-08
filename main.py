@@ -36,10 +36,10 @@ class FitBuddyApp:
     def set_window_icon(self):
         try:
             if sys.platform.startswith('win'):
-                icon_path = os.path.join(os.path.dirname(__file__), 'bicep_icon.ico')
+                icon_path = os.path.join(os.path.dirname(__file__), 'icons/bicep_icon.ico')
                 self.root.iconbitmap(icon_path)
             else:
-                icon_path = os.path.join(os.path.dirname(__file__), 'bicep_icon.png')
+                icon_path = os.path.join(os.path.dirname(__file__), 'icons/bicep_icon.png')
                 self.icon = tk.PhotoImage(file=icon_path)
                 self.root.iconphoto(False, self.icon)
         except Exception as e:

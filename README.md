@@ -56,7 +56,7 @@ git clone https://github.com/imvinnyc/FitBuddy.git
 ```
 cd FitBuddy
 ```
-- **Create a Virtual Environment (Optional but Recommended)**
+- **Create a Virtual Environment (Optional) (Recommended)**
 ```
 python -m venv venv # To create the virtual environment
 venv\Scripts\activate # To activate the virtual environment on Windows

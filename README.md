@@ -23,7 +23,7 @@ FitBuddy is a comprehensive fitness application designed to help users track the
 - Save and view generated workout plans for future reference.
 - Integrates with a backend server to fetch customized workout routines.
 
-### Diet Generator
+### Diet Builder
 - Create healthy diet plans tailored to dietary preferences, goals, and body types.
 - Save and view generated diet plans.
 - Utilizes a backend server to generate personalized diet recommendations.

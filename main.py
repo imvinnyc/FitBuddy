@@ -27,6 +27,7 @@ class FitBuddyApp:
         self.entry_bg_color = "#2D2D2D"
         self.entry_fg_color = "#FFFFFF"
         self.center_main_window(400, 550)
+        self.active_tooltips = []
         self.initialize_frames()
         self.nutrition_log = self.load_log("nutrition_log.json")
         self.workout_log = self.load_log("workout_log.json")
@@ -130,6 +131,7 @@ class FitBuddyApp:
             frame.pack_forget()
 
     def show_frame(self, frame):
+        self.hide_all_tooltips()
         frames = [self.home_frame, self.nutrition_tracker_frame, self.calorie_calculator_frame,
                   self.workout_tracker_frame, self.workout_builder_frame, self.diet_generator_frame]
         for frm in frames:
@@ -552,8 +554,23 @@ class FitBuddyApp:
         for label_text in labels:
             frame = customtkinter.CTkFrame(content_frame, fg_color=self.bg_color)
             frame.pack(pady=5)
-            customtkinter.CTkLabel(frame, text=label_text, font=("Arial", 12),
-                                   text_color=self.text_color).pack(side=tk.LEFT, padx=5)
+            label = customtkinter.CTkLabel(frame, text=label_text, font=("Arial", 12),
+                                           text_color=self.text_color)
+            label.pack(side=tk.LEFT, padx=5)
+            if label_text in ["Body Type", "Dietary Preference"]:
+                tooltip_text = ""
+                if label_text == "Body Type":
+                    tooltip_text = "Body Type refers to your physique classification:\n- Ectomorph: Lean, difficulty gaining weight.\n- Mesomorph: Muscular, easy to gain muscle.\n- Endomorph: Softer, tendency to store fat."
+                elif label_text == "Dietary Preference":
+                    tooltip_text = ("Dietary Preference allows you to select your diet type:\n"
+                                    "- General Balanced Diet: A diet including a variety of foods from all food groups.\n"
+                                    "- Keto: Low-carb, high-fat diet.\n"
+                                    "- Vegan: Excludes all animal products.\n"
+                                    "- Vegetarian: Excludes meat but may include dairy and eggs.\n"
+                                    "- Paleo: Focuses on foods presumed to be available to Paleolithic humans.")
+                if tooltip_text:
+                    tooltip_label = self.create_tooltip_label(frame, tooltip_text)
+                    tooltip_label.pack(side=tk.LEFT, padx=2)
             if label_text in options:
                 var = tk.StringVar(value=options[label_text][0])
                 menu = customtkinter.CTkOptionMenu(frame, variable=var, values=options[label_text],
@@ -670,8 +687,23 @@ class FitBuddyApp:
         for label_text in labels:
             frame = customtkinter.CTkFrame(content_frame, fg_color=self.bg_color)
             frame.pack(pady=5)
-            customtkinter.CTkLabel(frame, text=label_text, font=("Arial", 12),
-                                   text_color=self.text_color).pack(side=tk.LEFT, padx=5)
+            label = customtkinter.CTkLabel(frame, text=label_text, font=("Arial", 12),
+                                           text_color=self.text_color)
+            label.pack(side=tk.LEFT, padx=5)
+            if label_text in ["Body Type", "Dietary Preference"]:
+                tooltip_text = ""
+                if label_text == "Body Type":
+                    tooltip_text = "Body Type refers to your physique classification:\n- Ectomorph: Lean, difficulty gaining weight.\n- Mesomorph: Muscular, easy to gain muscle.\n- Endomorph: Softer, tendency to store fat."
+                elif label_text == "Dietary Preference":
+                    tooltip_text = ("Dietary Preference allows you to select your diet type:\n"
+                                    "- General Balanced Diet: A diet including a variety of foods from all food groups.\n"
+                                    "- Keto: Low-carb, high-fat diet.\n"
+                                    "- Vegan: Excludes all animal products.\n"
+                                    "- Vegetarian: Excludes meat but may include dairy and eggs.\n"
+                                    "- Paleo: Focuses on foods presumed to be available to Paleolithic humans.")
+                if tooltip_text:
+                    tooltip_label = self.create_tooltip_label(frame, tooltip_text)
+                    tooltip_label.pack(side=tk.LEFT, padx=2)
             var = tk.StringVar(value=options[label_text][0])
             menu = customtkinter.CTkOptionMenu(frame, variable=var, values=options[label_text],
                                                fg_color=self.entry_bg_color, text_color=self.text_color,
@@ -856,6 +888,40 @@ class FitBuddyApp:
         clear_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         close_button = self.create_button(buttons_frame, "Close", plan_window.destroy)
         close_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+    def create_tooltip_label(self, parent, tooltip_text):
+        tooltip_label = customtkinter.CTkLabel(parent, text="?", font=("Arial", 10, "bold"),
+                                               text_color=self.text_color, fg_color=self.entry_bg_color,
+                                               corner_radius=10, width=20, height=20)
+        tooltip_label.configure(anchor="center")
+
+        def show_tooltip(event):
+            self.hide_all_tooltips()
+            tooltip_window = customtkinter.CTkToplevel(self.root)
+            tooltip_window.overrideredirect(True)
+            tooltip_window.configure(fg_color=self.bg_color)
+            label = customtkinter.CTkLabel(tooltip_window, text=tooltip_text, text_color=self.text_color,
+                                           fg_color=self.bg_color, wraplength=200)
+            label.pack()
+            x = event.widget.winfo_rootx() + 20
+            y = event.widget.winfo_rooty() + 20
+            tooltip_window.geometry(f"+{x}+{y}")
+            self.active_tooltips.append(tooltip_window)
+            tooltip_window.bind("<Enter>", lambda e: None)
+            tooltip_window.bind("<Leave>", lambda e: self.hide_all_tooltips())
+
+        def hide_tooltip(event=None):
+            self.hide_all_tooltips()
+
+        tooltip_label.bind("<Enter>", show_tooltip)
+        tooltip_label.bind("<Leave>", hide_tooltip)
+
+        return tooltip_label
+
+    def hide_all_tooltips(self):
+        while self.active_tooltips:
+            tooltip = self.active_tooltips.pop()
+            tooltip.destroy()
 
 
 if __name__ == "__main__":

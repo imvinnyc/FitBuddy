@@ -137,6 +137,7 @@ class FitBuddyApp:
         for frm in frames:
             frm.pack_forget()
         frame.pack(fill=tk.BOTH, expand=True)
+        self.root.update_idletasks()
 
     def create_button(self, parent, text, command):
         button = customtkinter.CTkButton(parent, text=text, command=command,

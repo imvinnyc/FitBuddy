@@ -71,10 +71,6 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-## Development Status
-
-FitBuddy is currently under development for bug testing and enhancing user experience. While all primary features are implemented and functional, ongoing work focuses on improving the application's intuitiveness and performance.
-
 ## Backend Server
 
 FitBuddy integrates with a backend server that securely manages APIs and generates personalized workout and diet plans using OpenAI's Python library. To explore the backend server, visit the repository:

@@ -10,7 +10,6 @@ import os
 import sys
 import threading
 
-
 class FitBuddyApp:
     def __init__(self, root):
         self.root = root
@@ -66,69 +65,41 @@ class FitBuddyApp:
             window.grab_set()
         window.focus_set()
 
-    def disable_main_window_widgets(self):
-        for widget in self.home_frame.winfo_children():
-            self.recursive_disable(widget)
-
-    def recursive_disable(self, widget):
-        if isinstance(widget, (customtkinter.CTkButton, customtkinter.CTkEntry, customtkinter.CTkOptionMenu)):
-            widget.configure(state="disabled")
-        for child in widget.winfo_children():
-            self.recursive_disable(child)
-
-    def enable_main_window_widgets(self):
-        for widget in self.home_frame.winfo_children():
-            self.recursive_enable(widget)
-
-    def recursive_enable(self, widget):
-        if isinstance(widget, (customtkinter.CTkButton, customtkinter.CTkEntry, customtkinter.CTkOptionMenu)):
-            widget.configure(state="normal")
-        for child in widget.winfo_children():
-            self.recursive_enable(child)
-
-    def create_modal_window(self, title, width, height, setup_func):
-        self.disable_main_window_widgets()
-        modal_window = customtkinter.CTkToplevel(self.root)
-        modal_window.title(title)
-        self.center_window(modal_window, width, height, modal=False)
-        modal_window.transient(self.root)
-        modal_window.configure(fg_color=self.bg_color)
-
-        def on_close():
-            modal_window.destroy()
-            self.enable_main_window_widgets()
-            self.root.focus_set()
-
-        modal_window.protocol("WM_DELETE_WINDOW", on_close)
-        setup_func(modal_window)
-        self.root.wait_window(modal_window)
-        self.enable_main_window_widgets()
-        self.root.focus_set()
-
     def initialize_frames(self):
         self.home_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
         self.home_frame.pack(fill=tk.BOTH, expand=True)
         self.home_frame.pack_propagate(False)
         content_frame = customtkinter.CTkFrame(self.home_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
-        customtkinter.CTkLabel(content_frame, text="Welcome to FitBuddy", font=("Arial", 18, "bold"),
-                               text_color=self.text_color).pack(pady=10)
+        customtkinter.CTkLabel(content_frame, text="Welcome to FitBuddy", font=("Arial", 18, "bold"), text_color=self.text_color).pack(pady=10)
         self.create_button(content_frame, "Nutrition Tracker", self.show_nutrition_tracker).pack(pady=5)
         self.create_button(content_frame, "Calorie Calculator", self.show_calorie_calculator).pack(pady=5)
         self.create_button(content_frame, "Workout Tracker", self.show_workout_tracker).pack(pady=5)
         self.create_button(content_frame, "Workout Builder", self.show_workout_builder).pack(pady=5)
         self.create_button(content_frame, "Create Diet", self.show_diet_generator).pack(pady=5)
         self.create_button(content_frame, "Exit", self.root.destroy).pack(pady=5)
+
         self.nutrition_tracker_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
+        self.setup_nutrition_tracker_frame()
         self.calorie_calculator_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
+        self.setup_calorie_calculator_frame()
         self.workout_tracker_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
+        self.setup_workout_tracker_frame()
         self.workout_builder_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
+        self.setup_workout_builder_frame()
         self.diet_generator_frame = customtkinter.CTkFrame(self.root, fg_color=self.bg_color)
-        for frame in [self.nutrition_tracker_frame, self.calorie_calculator_frame,
-                      self.workout_tracker_frame, self.workout_builder_frame,
-                      self.diet_generator_frame]:
+        self.setup_diet_generator_frame()
+
+        for frame in [self.nutrition_tracker_frame, self.calorie_calculator_frame, self.workout_tracker_frame, self.workout_builder_frame, self.diet_generator_frame]:
             frame.pack(fill=tk.BOTH, expand=True)
             frame.pack_forget()
+
+    def create_button(self, parent, text, command):
+        button = customtkinter.CTkButton(parent, text=text, command=command,
+                                         fg_color=self.btn_color, hover_color=self.btn_hover_color,
+                                         text_color=self.text_color, corner_radius=15,
+                                         width=200, height=40)
+        return button
 
     def show_frame(self, frame):
         self.hide_all_tooltips()
@@ -139,13 +110,6 @@ class FitBuddyApp:
         frame.pack(fill=tk.BOTH, expand=True)
         self.root.update_idletasks()
 
-    def create_button(self, parent, text, command):
-        button = customtkinter.CTkButton(parent, text=text, command=command,
-                                         fg_color=self.btn_color, hover_color=self.btn_hover_color,
-                                         text_color=self.text_color, corner_radius=15,
-                                         width=200, height=40)
-        return button
-
     def back_to_home(self):
         self.show_frame(self.home_frame)
 
@@ -153,7 +117,7 @@ class FitBuddyApp:
         try:
             with open(filename, "r") as file:
                 return json.load(file)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             return {}
 
     def save_log(self, log_data, filename):
@@ -165,50 +129,41 @@ class FitBuddyApp:
         text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
-
         text_widget = tk.Text(text_frame, wrap=tk.WORD, state=tk.NORMAL, bg=self.entry_bg_color,
                               fg=self.entry_fg_color, insertbackground=self.entry_fg_color,
                               font=("Arial", 12), bd=0, relief=tk.FLAT)
         text_widget.grid(row=0, column=0, sticky="nsew")
-
         scrollbar = customtkinter.CTkScrollbar(text_frame, orientation="vertical", command=text_widget.yview, width=12)
         scrollbar.grid(row=0, column=1, sticky="ns")
         scrollbar.grid_remove()
-
         text_widget.configure(yscrollcommand=scrollbar.set)
-
         def update_scrollbar(event=None):
             first, last = text_widget.yview()
             if last - first >= 1.0:
                 scrollbar.grid_remove()
             else:
                 scrollbar.grid()
-
         text_widget.bind('<Configure>', update_scrollbar)
         text_widget.bind('<<Modified>>', update_scrollbar)
         text_widget.edit_modified(False)
-
         return text_widget, update_scrollbar
 
-    def show_nutrition_tracker(self):
-        self.show_frame(self.nutrition_tracker_frame)
-        for widget in self.nutrition_tracker_frame.winfo_children():
-            widget.destroy()
+    def setup_nutrition_tracker_frame(self):
         content_frame = customtkinter.CTkFrame(self.nutrition_tracker_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
         customtkinter.CTkLabel(content_frame, text="Nutrition Tracker", font=("Arial", 18, "bold"),
                                text_color=self.text_color).pack(pady=10)
         self.nutrition_entries = {}
-        nutrients = ["Calories", "Fat", "Protein", "Carbohydrates", "Fiber"]
-        for nutrient in nutrients:
+        labels = ["Food", "Calories", "Fat", "Protein", "Carbohydrates", "Fiber"]
+        for label_text in labels:
             frame = customtkinter.CTkFrame(content_frame, fg_color=self.bg_color)
             frame.pack(pady=5)
-            customtkinter.CTkLabel(frame, text=nutrient, font=("Arial", 12),
+            customtkinter.CTkLabel(frame, text=label_text, font=("Arial", 12),
                                    text_color=self.text_color).pack(side=tk.LEFT, padx=5)
             entry = customtkinter.CTkEntry(frame, font=("Arial", 12),
                                            fg_color=self.entry_bg_color, text_color=self.entry_fg_color)
             entry.pack(side=tk.LEFT, padx=5)
-            self.nutrition_entries[nutrient] = entry
+            self.nutrition_entries[label_text] = entry
         buttons_frame = customtkinter.CTkFrame(content_frame, fg_color=self.bg_color)
         buttons_frame.pack(pady=5)
         self.create_button(buttons_frame, "Save Entry", self.save_nutrition_entry).pack(pady=5)
@@ -216,9 +171,15 @@ class FitBuddyApp:
         self.create_button(buttons_frame, "Visualizations", self.view_nutrition_visualization).pack(pady=5)
         self.create_button(buttons_frame, "Back", self.back_to_home).pack(pady=5)
 
+    def show_nutrition_tracker(self):
+        self.show_frame(self.nutrition_tracker_frame)
+
     def save_nutrition_entry(self):
         try:
-            entry_data = {key: float(self.nutrition_entries[key].get()) for key in self.nutrition_entries}
+            entry_data = {}
+            entry_data['Food'] = self.nutrition_entries['Food'].get()
+            for key in ['Calories', 'Fat', 'Protein', 'Carbohydrates', 'Fiber']:
+                entry_data[key] = float(self.nutrition_entries[key].get())
             date = datetime.now().strftime("%Y-%m-%d")
             if date not in self.nutrition_log:
                 self.nutrition_log[date] = []
@@ -244,7 +205,7 @@ class FitBuddyApp:
                     log_text.insert(tk.END, f"Date: {date}\n", "date_tag")
                     for entry in entries:
                         log_text.insert(tk.END,
-                                        f"  Calories: {entry['Calories']} | Fat: {entry['Fat']} | Protein: {entry['Protein']} | Carbs: {entry['Carbohydrates']} | Fiber: {entry['Fiber']}\n")
+                                        f"  Food: {entry['Food']} | Calories: {entry['Calories']} | Fat: {entry['Fat']} | Protein: {entry['Protein']} | Carbs: {entry['Carbohydrates']} | Fiber: {entry['Fiber']}\n")
                     log_text.insert(tk.END, "\n")
                 log_text.config(state=tk.DISABLED)
                 log_text.edit_modified(True)
@@ -268,7 +229,6 @@ class FitBuddyApp:
                 buttons_frame.grid_columnconfigure(0, weight=1)
                 close_button = self.create_button(buttons_frame, "Close", log_window.destroy)
                 close_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-
         self.create_modal_window("Nutrition Log", 400, 500, setup_nutrition_log)
 
     def clear_nutrition_log(self, log_window):
@@ -316,10 +276,63 @@ class FitBuddyApp:
         ax.grid(True)
         self.show_plot_in_new_window(fig)
 
-    def show_calorie_calculator(self):
-        self.show_frame(self.calorie_calculator_frame)
-        for widget in self.calorie_calculator_frame.winfo_children():
-            widget.destroy()
+    def create_modal_window(self, title, width, height, setup_func):
+        modal_window = customtkinter.CTkToplevel(self.root)
+        modal_window.title(title)
+        self.center_window(modal_window, width, height, modal=False)
+        modal_window.transient(self.root)
+        modal_window.configure(fg_color=self.bg_color)
+        def on_close():
+            modal_window.destroy()
+            self.root.focus_set()
+        modal_window.protocol("WM_DELETE_WINDOW", on_close)
+        setup_func(modal_window)
+        self.root.wait_window(modal_window)
+        self.root.focus_set()
+
+    def select_date_from_log(self, log):
+        dates = list(log.keys())
+        if not dates:
+            messagebox.showinfo("No Data", "No data available to select.")
+            return None
+        self.selected_date = None
+        def setup_date_select_window(date_select_window):
+            date_select_window.grid_rowconfigure(0, weight=1)
+            date_select_window.grid_columnconfigure(0, weight=1)
+            date_select_window.grid_columnconfigure(1, weight=1)
+            customtkinter.CTkLabel(date_select_window, text="Select a date:", text_color=self.text_color,
+                                   font=("Arial", 12)).pack(pady=10)
+            selected_date = tk.StringVar(value=dates[0])
+            dropdown = customtkinter.CTkOptionMenu(date_select_window, variable=selected_date, values=dates,
+                                                   fg_color=self.entry_bg_color, text_color=self.text_color,
+                                                   button_color=self.btn_color, button_hover_color=self.btn_hover_color)
+            dropdown.pack(pady=10)
+            def confirm_selection():
+                self.selected_date = selected_date.get()
+                date_select_window.destroy()
+            confirm_button = self.create_button(date_select_window, "Confirm", confirm_selection)
+            confirm_button.pack(pady=10)
+        self.create_modal_window("Select Date", 300, 150, setup_date_select_window)
+        return self.selected_date
+
+    def show_plot_in_new_window(self, fig, width=440, height=500):
+        plot_window = customtkinter.CTkToplevel(self.root)
+        plot_window.title("Visualization")
+        self.center_window(plot_window, width, height, modal=False)
+        plot_window.configure(fg_color=self.bg_color)
+        plot_window.grid_rowconfigure(0, weight=1)
+        plot_window.grid_columnconfigure(0, weight=1)
+        canvas = FigureCanvasTkAgg(fig, master=plot_window)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        def on_close():
+            plt.close(fig)
+            plot_window.destroy()
+        plot_window.protocol("WM_DELETE_WINDOW", on_close)
+        close_button = self.create_button(plot_window, "Close", on_close)
+        close_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+
+    def setup_calorie_calculator_frame(self):
         content_frame = customtkinter.CTkFrame(self.calorie_calculator_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
         customtkinter.CTkLabel(content_frame, text="Calorie Calculator", font=("Arial", 18, "bold"),
@@ -360,6 +373,9 @@ class FitBuddyApp:
         self.create_button(buttons_frame, "Calculate", self.calculate_calories).pack(pady=5)
         self.create_button(buttons_frame, "Back", self.back_to_home).pack(pady=5)
 
+    def show_calorie_calculator(self):
+        self.show_frame(self.calorie_calculator_frame)
+
     def calculate_calories(self):
         try:
             age = int(self.calorie_entries['age'].get())
@@ -384,10 +400,7 @@ class FitBuddyApp:
         except ValueError:
             messagebox.showerror("Error", "Please enter valid information.")
 
-    def show_workout_tracker(self):
-        self.show_frame(self.workout_tracker_frame)
-        for widget in self.workout_tracker_frame.winfo_children():
-            widget.destroy()
+    def setup_workout_tracker_frame(self):
         content_frame = customtkinter.CTkFrame(self.workout_tracker_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
         customtkinter.CTkLabel(content_frame, text="Workout Tracker", font=("Arial", 18, "bold"),
@@ -420,6 +433,9 @@ class FitBuddyApp:
         self.create_button(buttons_frame, "View Log", self.view_workout_log).pack(pady=5)
         self.create_button(buttons_frame, "Visualizations", self.view_workout_visualization).pack(pady=5)
         self.create_button(buttons_frame, "Back", self.back_to_home).pack(pady=5)
+
+    def show_workout_tracker(self):
+        self.show_frame(self.workout_tracker_frame)
 
     def save_workout_entry(self):
         try:
@@ -479,7 +495,6 @@ class FitBuddyApp:
                 buttons_frame.grid_columnconfigure(0, weight=1)
                 close_button = self.create_button(buttons_frame, "Close", log_window.destroy)
                 close_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-
         self.create_modal_window("Workout Log", 400, 500, setup_workout_log)
 
     def clear_workout_log(self, log_window):
@@ -535,10 +550,7 @@ class FitBuddyApp:
         ax.grid(True)
         self.show_plot_in_new_window(fig, width=500, height=900)
 
-    def show_workout_builder(self):
-        self.show_frame(self.workout_builder_frame)
-        for widget in self.workout_builder_frame.winfo_children():
-            widget.destroy()
+    def setup_workout_builder_frame(self):
         content_frame = customtkinter.CTkFrame(self.workout_builder_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
         customtkinter.CTkLabel(content_frame, text="Workout Builder", font=("Arial", 18, "bold"),
@@ -590,6 +602,9 @@ class FitBuddyApp:
         self.create_button(buttons_frame, "Generate Workout", self.generate_workout).pack(pady=5)
         self.create_button(buttons_frame, "View Workouts", self.view_saved_workouts).pack(pady=5)
         self.create_button(buttons_frame, "Back", self.back_to_home).pack(pady=5)
+
+    def show_workout_builder(self):
+        self.show_frame(self.workout_builder_frame)
 
     def generate_workout(self):
         try:
@@ -670,10 +685,93 @@ class FitBuddyApp:
         if date:
             self.show_saved_plans(self.saved_workouts[date], "Workout", "saved_workouts.json", self.saved_workouts)
 
-    def show_diet_generator(self):
-        self.show_frame(self.diet_generator_frame)
-        for widget in self.diet_generator_frame.winfo_children():
-            widget.destroy()
+    def show_saved_plans(self, plans, plan_type, filename, log):
+        if not plans:
+            messagebox.showinfo("No Data", f"No saved {plan_type.lower()}s available.")
+            return
+        plan_window = customtkinter.CTkToplevel(self.root)
+        plan_window.title(f"Saved {plan_type}s")
+        self.center_window(plan_window, 400, 500, modal=False)
+        plan_window.configure(fg_color=self.bg_color)
+        plan_window.grid_rowconfigure(0, weight=1)
+        plan_window.grid_columnconfigure(0, weight=1)
+        plan_text, update_scrollbar = self.create_text_with_scrollbar(plan_window)
+        for i, plan in enumerate(plans, start=1):
+            plan_text.insert(tk.END, f"{plan_type} {i}:\n{plan}\n\n")
+        plan_text.config(state=tk.DISABLED)
+        plan_text.edit_modified(True)
+        update_scrollbar()
+        buttons_frame = customtkinter.CTkFrame(plan_window, fg_color=self.bg_color)
+        buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        buttons_frame.grid_columnconfigure(1, weight=1)
+        def clear_saved_plan():
+            if len(plans) > 1:
+                selected_plan_index = simpledialog.askinteger(
+                    "Select Plan",
+                    f"Enter the number of the {plan_type.lower()} to delete (1-{len(plans)}):",
+                    minvalue=1,
+                    maxvalue=len(plans)
+                )
+                if selected_plan_index is not None:
+                    del plans[selected_plan_index - 1]
+                    if not plans:
+                        for date_key, date_plans in log.items():
+                            if date_plans == plans:
+                                del log[date_key]
+                                break
+                    self.save_log(log, filename)
+                    plan_window.destroy()
+                    messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
+            else:
+                confirm = messagebox.askyesno("Confirm Deletion",
+                                              f"Are you sure you want to delete the only {plan_type.lower()}?")
+                if confirm:
+                    del plans[0]
+                    if not plans:
+                        for date_key, date_plans in log.items():
+                            if date_plans == plans:
+                                del log[date_key]
+                                break
+                    self.save_log(log, filename)
+                    plan_window.destroy()
+                    messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
+        clear_button = self.create_button(buttons_frame, "Clear", clear_saved_plan)
+        clear_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        close_button = self.create_button(buttons_frame, "Close", plan_window.destroy)
+        close_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+    def create_tooltip_label(self, parent, tooltip_text):
+        tooltip_label = customtkinter.CTkLabel(parent, text="?", font=("Arial", 10, "bold"),
+                                               text_color=self.text_color, fg_color=self.entry_bg_color,
+                                               corner_radius=10, width=20, height=20)
+        tooltip_label.configure(anchor="center")
+        def show_tooltip(event):
+            self.hide_all_tooltips()
+            tooltip_window = customtkinter.CTkToplevel(self.root)
+            tooltip_window.overrideredirect(True)
+            tooltip_window.configure(fg_color=self.bg_color)
+            label = customtkinter.CTkLabel(tooltip_window, text=tooltip_text, text_color=self.text_color,
+                                           fg_color=self.bg_color, wraplength=200)
+            label.pack()
+            x = event.widget.winfo_rootx() + 20
+            y = event.widget.winfo_rooty() + 20
+            tooltip_window.geometry(f"+{x}+{y}")
+            self.active_tooltips.append(tooltip_window)
+            tooltip_window.bind("<Enter>", lambda e: None)
+            tooltip_window.bind("<Leave>", lambda e: self.hide_all_tooltips())
+        def hide_tooltip(event=None):
+            self.hide_all_tooltips()
+        tooltip_label.bind("<Enter>", show_tooltip)
+        tooltip_label.bind("<Leave>", hide_tooltip)
+        return tooltip_label
+
+    def hide_all_tooltips(self):
+        while self.active_tooltips:
+            tooltip = self.active_tooltips.pop()
+            tooltip.destroy()
+
+    def setup_diet_generator_frame(self):
         content_frame = customtkinter.CTkFrame(self.diet_generator_frame, fg_color=self.bg_color)
         content_frame.pack(expand=True)
         customtkinter.CTkLabel(content_frame, text="Create Healthy Diet", font=("Arial", 18, "bold"),
@@ -717,6 +815,9 @@ class FitBuddyApp:
         self.create_button(buttons_frame, "Generate Diet Plan", self.generate_diet_plan).pack(pady=5)
         self.create_button(buttons_frame, "View Diets", self.view_saved_diets).pack(pady=5)
         self.create_button(buttons_frame, "Back", self.back_to_home).pack(pady=5)
+
+    def show_diet_generator(self):
+        self.show_frame(self.diet_generator_frame)
 
     def generate_diet_plan(self):
         try:
@@ -783,147 +884,6 @@ class FitBuddyApp:
             date = list(self.saved_diets.keys())[0]
         if date:
             self.show_saved_plans(self.saved_diets[date], "Diet", "saved_diets.json", self.saved_diets)
-
-    def show_plot_in_new_window(self, fig, width=440, height=500):
-        plot_window = customtkinter.CTkToplevel(self.root)
-        plot_window.title("Visualization")
-        self.center_window(plot_window, width, height, modal=False)
-        plot_window.configure(fg_color=self.bg_color)
-        plot_window.grid_rowconfigure(0, weight=1)
-        plot_window.grid_columnconfigure(0, weight=1)
-        canvas = FigureCanvasTkAgg(fig, master=plot_window)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-
-        def on_close():
-            plt.close(fig)
-            plot_window.destroy()
-
-        plot_window.protocol("WM_DELETE_WINDOW", on_close)
-        close_button = self.create_button(plot_window, "Close", on_close)
-        close_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-
-    def select_date_from_log(self, log):
-        dates = list(log.keys())
-        if not dates:
-            messagebox.showinfo("No Data", "No data available to select.")
-            return None
-        self.selected_date = None
-
-        def setup_date_select_window(date_select_window):
-            date_select_window.grid_rowconfigure(0, weight=1)
-            date_select_window.grid_columnconfigure(0, weight=1)
-            date_select_window.grid_columnconfigure(1, weight=1)
-            customtkinter.CTkLabel(date_select_window, text="Select a date:", text_color=self.text_color,
-                                   font=("Arial", 12)).pack(pady=10)
-            selected_date = tk.StringVar(value=dates[0])
-            dropdown = customtkinter.CTkOptionMenu(date_select_window, variable=selected_date, values=dates,
-                                                   fg_color=self.entry_bg_color, text_color=self.text_color,
-                                                   button_color=self.btn_color, button_hover_color=self.btn_hover_color)
-            dropdown.pack(pady=10)
-
-            def confirm_selection():
-                self.selected_date = selected_date.get()
-                date_select_window.destroy()
-
-            confirm_button = self.create_button(date_select_window, "Confirm", confirm_selection)
-            confirm_button.pack(pady=10)
-
-        self.create_modal_window("Select Date", 300, 150, setup_date_select_window)
-        return self.selected_date
-
-    def show_saved_plans(self, plans, plan_type, filename, log):
-        if not plans:
-            messagebox.showinfo("No Data", f"No saved {plan_type.lower()}s available.")
-            return
-        plan_window = customtkinter.CTkToplevel(self.root)
-        plan_window.title(f"Saved {plan_type}s")
-        self.center_window(plan_window, 400, 500, modal=False)
-        plan_window.configure(fg_color=self.bg_color)
-        plan_window.grid_rowconfigure(0, weight=1)
-        plan_window.grid_columnconfigure(0, weight=1)
-        plan_text, update_scrollbar = self.create_text_with_scrollbar(plan_window)
-        for i, plan in enumerate(plans, start=1):
-            plan_text.insert(tk.END, f"{plan_type} {i}:\n{plan}\n\n")
-        plan_text.config(state=tk.DISABLED)
-        plan_text.edit_modified(True)
-        update_scrollbar()
-        buttons_frame = customtkinter.CTkFrame(plan_window, fg_color=self.bg_color)
-        buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        buttons_frame.grid_columnconfigure(0, weight=1)
-        buttons_frame.grid_columnconfigure(1, weight=1)
-
-        def clear_saved_plan():
-            if len(plans) > 1:
-                selected_plan_index = simpledialog.askinteger(
-                    "Select Plan",
-                    f"Enter the number of the {plan_type.lower()} to delete (1-{len(plans)}):",
-                    minvalue=1,
-                    maxvalue=len(plans)
-                )
-                if selected_plan_index is not None:
-                    del plans[selected_plan_index - 1]
-                    if not plans:
-                        for date_key, date_plans in log.items():
-                            if date_plans == plans:
-                                del log[date_key]
-                                break
-                    self.save_log(log, filename)
-                    plan_window.destroy()
-                    messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
-            else:
-                confirm = messagebox.askyesno("Confirm Deletion",
-                                              f"Are you sure you want to delete the only {plan_type.lower()}?")
-                if confirm:
-                    del plans[0]
-                    if not plans:
-                        for date_key, date_plans in log.items():
-                            if date_plans == plans:
-                                del log[date_key]
-                                break
-                    self.save_log(log, filename)
-                    plan_window.destroy()
-                    messagebox.showinfo("Success", f"{plan_type} deleted successfully!")
-
-        clear_button = self.create_button(buttons_frame, "Clear", clear_saved_plan)
-        clear_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        close_button = self.create_button(buttons_frame, "Close", plan_window.destroy)
-        close_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-
-    def create_tooltip_label(self, parent, tooltip_text):
-        tooltip_label = customtkinter.CTkLabel(parent, text="?", font=("Arial", 10, "bold"),
-                                               text_color=self.text_color, fg_color=self.entry_bg_color,
-                                               corner_radius=10, width=20, height=20)
-        tooltip_label.configure(anchor="center")
-
-        def show_tooltip(event):
-            self.hide_all_tooltips()
-            tooltip_window = customtkinter.CTkToplevel(self.root)
-            tooltip_window.overrideredirect(True)
-            tooltip_window.configure(fg_color=self.bg_color)
-            label = customtkinter.CTkLabel(tooltip_window, text=tooltip_text, text_color=self.text_color,
-                                           fg_color=self.bg_color, wraplength=200)
-            label.pack()
-            x = event.widget.winfo_rootx() + 20
-            y = event.widget.winfo_rooty() + 20
-            tooltip_window.geometry(f"+{x}+{y}")
-            self.active_tooltips.append(tooltip_window)
-            tooltip_window.bind("<Enter>", lambda e: None)
-            tooltip_window.bind("<Leave>", lambda e: self.hide_all_tooltips())
-
-        def hide_tooltip(event=None):
-            self.hide_all_tooltips()
-
-        tooltip_label.bind("<Enter>", show_tooltip)
-        tooltip_label.bind("<Leave>", hide_tooltip)
-
-        return tooltip_label
-
-    def hide_all_tooltips(self):
-        while self.active_tooltips:
-            tooltip = self.active_tooltips.pop()
-            tooltip.destroy()
-
 
 if __name__ == "__main__":
     root = customtkinter.CTk()

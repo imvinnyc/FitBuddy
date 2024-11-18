@@ -3,3 +3,4 @@ saved_diets.json
 saved_workouts.json
 workout_log.json
 .idea/
+.venv/

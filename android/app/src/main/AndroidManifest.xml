@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.fitbuddy">          <!-- ← add your real package id -->
+          package="com.example.fitbuddy">          
 
     <!-- ──────── ① RUNTIME PERMISSIONS ──────── -->
     <uses-permission android:name="android.permission.INTERNET"/>

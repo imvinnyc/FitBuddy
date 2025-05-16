@@ -16,7 +16,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'exercise_tutorial_screen.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
@@ -345,7 +344,7 @@ class NearbyGymsScreen extends StatefulWidget {
 class _NearbyGymsScreenState extends State<NearbyGymsScreen> {
   bool _loading = true;
   Position? _position;
-  late final WebViewController _controller;
+  WebViewController? _controller;
 
   @override
   void initState() {
@@ -360,12 +359,16 @@ class _NearbyGymsScreenState extends State<NearbyGymsScreen> {
       setState(() => _loading = false);
       return;
     }
+
     final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
     setState(() {
       _position = pos;
       _loading = false;
     });
+
     if (!kIsWeb) {
       final url = _mapsEmbedUrl(pos.latitude, pos.longitude);
       _controller = WebViewController()
@@ -375,11 +378,7 @@ class _NearbyGymsScreenState extends State<NearbyGymsScreen> {
   }
 
   String _mapsEmbedUrl(double lat, double lng) {
-    return 'https://www.google.com/maps'
-        '?q=gyms'
-        '&ll=$lat,$lng'
-        '&z=12'
-        '&output=embed';
+    return 'https://www.google.com/maps/search/gyms/@$lat,$lng,14z';
   }
 
   @override
@@ -392,19 +391,16 @@ class _NearbyGymsScreenState extends State<NearbyGymsScreen> {
           : _position == null
               ? const Center(child: Text('Location permission denied'))
               : kIsWeb
-                  ? SizedBox.expand(
-                      child: HtmlWidget(
-                        '<iframe '
-                        'src="${_mapsEmbedUrl(_position!.latitude, _position!.longitude)}" '
-                        'width="100%" '
-                        'height="100%" '
-                        'style="border:none;width:100vw;height:100vh;margin:0;padding:0;" '
-                        '></iframe>',
-                      ),
+                  ? HtmlWidget(
+                      '<iframe '
+                      'src="${_mapsEmbedUrl(_position!.latitude, _position!.longitude)}" '
+                      'width="100%" height="100%" '
+                      'style="border:none;" '
+                      '></iframe>',
                     )
-                  : SizedBox.expand(
-                      child: WebViewWidget(controller: _controller),
-                    ),
+                  : (_controller == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : WebViewWidget(controller: _controller!)),
     );
   }
 }

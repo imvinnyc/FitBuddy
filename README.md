@@ -69,6 +69,9 @@ All external API calls - OpenAI, Nutritionix and ExerciseDB - are proxied throug
 
 If you self‑host the backend, remember to update the base URL inside:<br>
 - `lib/main.dart`<br>
+- `lib/nutrition_tracker_screen.dart`<br>
+- `lib/workout_builder_screen.dart`<br>
+- `lib/diet_generator_screen.dart`<br>
 - `lib/exercise_tutorial_screen.dart`
 
 ---
